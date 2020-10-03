@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import sys
+from math import ceil
+from threading import Thread
 
 import pandas as pd
 import requests
@@ -84,7 +86,7 @@ class ParsingWatch:
 
 			# создаём каталог для хранения изображений
 			dir_pic_path = os.path.join(os.path.dirname(__file__), 'imgs', f'{watch_name}')
-			os.mkdir(dir_pic_path)
+			os.makedirs(os.path.normpath(dir_pic_path))
 
 			# собираем все ссылки на картинки, у которых есть параметр data-large-url
 			pictures = soup.findAll('img', title=watch_name)
@@ -138,6 +140,8 @@ class ParsingWatch:
 		logging.info('start write xlsx')
 		for key in self.main_list.keys():
 			logging.info(f'write sheet: {key}')
+			if self.main_list[key] == []:
+				break
 			df = pd.DataFrame(self.main_list[key])
 			writer = ExcelWriter('watchs.xlsx')
 			df.to_excel(writer, 'main_sheet', index=False)
@@ -148,11 +152,26 @@ class ParsingWatch:
 		logging.info('Start')
 		list_data_pages = self.collect_html_data()
 
-		for pages in list_data_pages:
-			self.goes_to_pages(pages)
+		thread1 = Thread(target=self.goes_to_pages, args=(list_data_pages[0], ))
+		thread2 = Thread(target=self.goes_to_pages, args=(list_data_pages[1], ))
+		thread3 = Thread(target=self.goes_to_pages, args=(list_data_pages[2], ))
+		thread4 = Thread(target=self.goes_to_pages, args=(list_data_pages[3], ))
+
+		thread1.start()
+		thread2.start()
+		thread3.start()
+		thread4.start()
+		thread1.join()
+		thread2.join()
+		thread3.join()
+		thread4.join()
 		logging.info('End')
 
 		self.write_excel()
+
+
+
+
 
 
 if __name__ == '__main__':

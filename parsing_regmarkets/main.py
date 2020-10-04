@@ -5,7 +5,6 @@ import re
 
 import requests
 from bs4 import BeautifulSoup
-from openpyxl import Workbook
 
 logging.basicConfig(filename="building_material.log",
 					format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s',
@@ -61,31 +60,20 @@ class ParsingHeads:
 		logging.info(f'В сеции разделов: {list_prods.__len__()}')
 		return [x.text for x in list_prods]
 
-	def write_excel(self):
+	def write_json(self):
 		"""
-		Пишем данные в xlsx
+		Пишем данные в json
 		"""
-		logging.info('start write xlsx')
-
+		logging.info('start write json')
 
 		with open("data_file.json", "w", encoding='utf8') as write_file:
-			json.dump(self.main_data, write_file)
-		# wb = Workbook()
-		# ws = wb.active
-		# for key1 in self.main_data:
-		# 	for key2 in key1.keys():
-		# 		for key3 in key1[key2].keys():
-		# 			for key4 in key1[key2][key3].keys():
-		# 				for key5 in key1[key2][key3][key4]:
-		# 					row = [key2, key3, key4, key5]
-		# 					ws.append(row)
-		# wb.save('build.xlsx')
-		logging.info('end write xlsx')
+			json.dump(self.main_data, write_file, ensure_ascii=False)
+		logging.info('end write json')
 
 	def run(self):
 		logging.info('start')
 		self.collcet_first_level()
-		self.write_excel()
+		self.write_json()
 		logging.info('end')
 
 

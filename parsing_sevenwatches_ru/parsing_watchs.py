@@ -3,8 +3,6 @@ import logging
 import os
 import re
 import sys
-from math import ceil
-from threading import Thread
 
 import pandas as pd
 import requests
@@ -77,7 +75,7 @@ class ParsingWatch:
 		:return: Наполняем словарь self.main_list данными для каждого товара списком данных
 		"""
 
-		def collect_image(soup, watch_name):
+		def collect_image(soup, name_mass, watch_name):
 			"""
 			Собор картинок товара
 			:param soup: bs4 объект страницы товара
@@ -85,8 +83,10 @@ class ParsingWatch:
 			"""
 
 			# создаём каталог для хранения изображений
-			dir_pic_path = os.path.join(os.path.dirname(__file__), 'imgs', f'{watch_name}')
-			os.makedirs(os.path.normpath(dir_pic_path))
+			dir_pic_path = os.path.join(os.path.dirname(__file__), 'imgs', f'{name_mass}_' f'{watch_name}').replace(' ', '_')
+
+			if not os.path.exists(dir_pic_path):
+				os.makedirs(dir_pic_path)
 
 			# собираем все ссылки на картинки, у которых есть параметр data-large-url
 			pictures = soup.findAll('img', title=watch_name)
@@ -100,7 +100,8 @@ class ParsingWatch:
 				name_pic = link_pic.replace('https://www.sevenwatches.ru/', '').replace('/', '_')
 
 				p = requests.get(link_pic)
-				with open(os.path.join(dir_pic_path, name_pic), "wb") as out:
+				new_img_path = os.path.normpath(os.path.join(dir_pic_path, name_pic))
+				with open(new_img_path, "wb") as out:
 					out.write(p.content)
 
 			return f'imgs/{watch_name}'
@@ -120,7 +121,7 @@ class ParsingWatch:
 			values = soup_watch.findAll('span', class_=['custom-feature-name', 'custom-feature-value'])[1::2]
 			watch_info = dict(zip([x.text for x in keys], [x.text for x in values]))
 
-			img_path = collect_image(soup_watch, watch_name)
+			img_path = collect_image(soup_watch, name_mass, watch_name)
 			watch_info['Картинки'] = img_path
 
 			specifications = soup_watch.findAll('div', class_=['product-feature-name', 'product-feature-value'])
@@ -140,10 +141,8 @@ class ParsingWatch:
 		logging.info('start write xlsx')
 		for key in self.main_list.keys():
 			logging.info(f'write sheet: {key}')
-			if self.main_list[key] == []:
-				break
 			df = pd.DataFrame(self.main_list[key])
-			writer = ExcelWriter('watchs.xlsx')
+			writer = ExcelWriter('../watchs.xlsx')
 			df.to_excel(writer, 'main_sheet', index=False)
 			writer.save()
 		logging.info('end write xlsx')
@@ -152,26 +151,11 @@ class ParsingWatch:
 		logging.info('Start')
 		list_data_pages = self.collect_html_data()
 
-		thread1 = Thread(target=self.goes_to_pages, args=(list_data_pages[0], ))
-		thread2 = Thread(target=self.goes_to_pages, args=(list_data_pages[1], ))
-		thread3 = Thread(target=self.goes_to_pages, args=(list_data_pages[2], ))
-		thread4 = Thread(target=self.goes_to_pages, args=(list_data_pages[3], ))
-
-		thread1.start()
-		thread2.start()
-		thread3.start()
-		thread4.start()
-		thread1.join()
-		thread2.join()
-		thread3.join()
-		thread4.join()
+		for pages in list_data_pages:
+			self.goes_to_pages(pages)
 		logging.info('End')
 
 		self.write_excel()
-
-
-
-
 
 
 if __name__ == '__main__':

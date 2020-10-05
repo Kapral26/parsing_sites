@@ -22,6 +22,7 @@ class Ya_Parser:
 		bs_city = BeautifulSoup(req_city.text, "html.parser")
 		list_city_li = bs_city.findAll('li', class_='cat-item')
 		self.taxi_of_the_city = [{'city_name': x.find('a').text, 'link': x.find('a').get('href')} for x in list_city_li]
+		logging.info(f'Найдно городов{self.taxi_of_the_city.__len__()}')
 		for city in self.taxi_of_the_city:
 			logging.info(f'Собираем данные по городу:{city["city_name"]}')
 			city['firms'] = self.collect_taxi_firm(city['link'])
